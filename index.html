@@ -69,7 +69,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;
   font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;
   background:#E7F0FA;color:var(--nhs-dark);border:1px solid #CFE0F2}
-.badge--part2{background:#EAF6EE;color:var(--nhs-green);border-color:#CDE9D6}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 
 /* ---------- HOME ---------- */
@@ -487,7 +486,6 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
         <div class="progress"><div class="progress__bar" id="host-prog"></div></div>
         <div class="qhead">
           <span class="qnum" id="host-qnum">Q1</span>
-          <span class="badge" id="host-part">Part 1</span>
           <span class="qcat" id="host-cat">Cardiology</span>
         </div>
         <p class="qstem" id="host-stem"></p>
@@ -590,7 +588,6 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
       <div class="card playcard">
         <div class="qhead">
           <span class="qnum" id="play-qnum">Q1</span>
-          <span class="badge" id="play-part">Part 1</span>
           <span class="qcat" id="play-catname">Cardiology</span>
         </div>
         <p class="qstem" id="play-stem"></p>
@@ -680,7 +677,6 @@ const RING_CIRC = 2*Math.PI*86;
 function shuffle(a){const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]];}return x;}
 function categories(){const m={};QUESTIONS.forEach(q=>{m[q.c]=(m[q.c]||0)+1;});return Object.keys(m).sort().map(c=>({name:c,count:m[c]}));}
 function poolFor(cat){return cat==='all'?QUESTIONS.slice():QUESTIONS.filter(q=>q.c===cat);}
-function partLabel(p){return 'Part '+p;}
 function buildWhy(q){
   if(!q.w)return '';
   var rows=LETTERS.filter(function(L){return L!==q.x && q.w[L];}).map(function(L){
@@ -792,7 +788,6 @@ const Host={
     const q=this.order[this.idx];if(!q)return;
     this.resetTimer(true);
     $('host-qnum').textContent='Q'+q.i;
-    const pb=$('host-part');pb.textContent=partLabel(q.p);pb.className='badge'+(q.p==='2'?' badge--part2':'');
     $('host-cat').textContent=q.c;
     $('host-stem').textContent=q.q;
     const wrap=$('host-opts');wrap.innerHTML='';
@@ -973,7 +968,6 @@ const Play={
   render(){
     const q=this.order[this.idx];if(!q)return;this.answered=false;
     $('play-qnum').textContent='Q'+q.i;
-    const pb=$('play-part');pb.textContent=partLabel(q.p);pb.className='badge'+(q.p==='2'?' badge--part2':'');
     $('play-catname').textContent=q.c;
     $('play-stem').textContent=q.q;
     $('play-count').textContent='Question '+(this.idx+1)+' of '+this.order.length;
@@ -1077,7 +1071,7 @@ const Daily={
     $('daily-date').textContent=dayLabel(d);
     $('daily-num').textContent=dayOfYear(d);
     $('daily-streak').textContent=currentStreak(hist);
-    $('daily-card').innerHTML='<div class="qhead"><span class="qnum">Q'+q.i+'</span><span class="badge'+(q.p==='2'?' badge--part2':'')+'">'+partLabel(q.p)+'</span><span class="qcat">'+escapeHTML(q.c)+'</span></div><p class="qstem">'+escapeHTML(q.q)+'</p><div class="opts" id="daily-opts"></div><div class="explain'+(answered?' show':'')+'" id="daily-explain"><div class="explain__lab"><span class="ans">'+q.x+'</span> Correct answer &amp; teaching point</div><p>'+escapeHTML(q.e)+'</p><div class="whywrong">'+buildWhy(q)+'</div></div><div class="playfoot"><div class="feedback" id="daily-feedback"></div></div>';
+    $('daily-card').innerHTML='<div class="qhead"><span class="qnum">Q'+q.i+'</span><span class="qcat">'+escapeHTML(q.c)+'</span></div><p class="qstem">'+escapeHTML(q.q)+'</p><div class="opts" id="daily-opts"></div><div class="explain'+(answered?' show':'')+'" id="daily-explain"><div class="explain__lab"><span class="ans">'+q.x+'</span> Correct answer &amp; teaching point</div><p>'+escapeHTML(q.e)+'</p><div class="whywrong">'+buildWhy(q)+'</div></div><div class="playfoot"><div class="feedback" id="daily-feedback"></div></div>';
     const wrap=$('daily-opts');
     q.o.forEach((t,i)=>{const b=document.createElement('button');b.className='opt';b.dataset.k=LETTERS[i];b.innerHTML='<span class="opt__k">'+LETTERS[i]+'</span><span class="opt__t">'+escapeHTML(t)+'</span><span class="opt__tick">✓</span>';
       if(answered){b.disabled=true;if(LETTERS[i]===q.x)b.classList.add('opt--correct');else if(LETTERS[i]===past.pick)b.classList.add('opt--wrong');}
@@ -1245,7 +1239,7 @@ const Player={
     if(d.state==='finished'){el.innerHTML='<div class="card joincard"><h2>That is a wrap 🎉</h2><p class="sub">The session has ended — final standings below.</p>'+lb+'</div>';return;}
     if(d.state==='lobby'||!QBYID[d.qid]){el.innerHTML='<div class="card joincard"><div class="joinhead"><span class="dot-live"></span> You are in</div><h2 style="margin:.3em 0">Waiting for the host…</h2><p class="sub">Keep this page open. The next question appears here the moment the host starts it.</p>'+lb+'</div>';return;}
     const q=QBYID[d.qid];
-    const head='<div class="qhead"><span class="qnum">Q'+q.i+'</span><span class="badge'+(q.p==='2'?' badge--part2':'')+'">'+partLabel(q.p)+'</span><span class="qcat">'+escapeHTML(q.c)+'</span></div><p class="qstem">'+escapeHTML(q.q)+'</p>';
+    const head='<div class="qhead"><span class="qnum">Q'+q.i+'</span><span class="qcat">'+escapeHTML(q.c)+'</span></div><p class="qstem">'+escapeHTML(q.q)+'</p>';
     if(d.state==='question'){
       let opts='';q.o.forEach((t,i)=>{opts+='<button class="opt joinopt" data-k="'+LETTERS[i]+'" data-i="'+i+'"><span class="opt__k">'+LETTERS[i]+'</span><span class="opt__t">'+escapeHTML(t)+'</span></button>';});
       const locked=this.submitted;
