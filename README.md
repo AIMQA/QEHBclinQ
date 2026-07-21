@@ -1,2 +1,2 @@
 # QEHBclinQ
-website for QEHB daily question
+Website for QEHB daily question
