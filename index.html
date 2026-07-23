@@ -43,6 +43,28 @@ body{
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 :focus-visible{outline:3px solid var(--nhs-bright);outline-offset:2px;border-radius:6px}
 .hidden{display:none !important}
+/* skip link + programmatic focus targets */
+.skip{position:absolute;left:-9999px;top:0;z-index:200;background:var(--nhs-dark);color:#fff;font-weight:600;font-size:14px;padding:10px 16px;border-radius:0 0 10px 0;text-decoration:none}
+.skip:focus{left:0}
+main:focus,section:focus,h2:focus{outline:none}
+/* question flagging for the QA pipeline */
+.flagrow{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.flagbtn{font:600 12.5px var(--font);color:#B45309;background:#fff;border:1.5px solid #E5C39A;border-radius:999px;padding:7px 13px;cursor:pointer}
+.flagbtn:hover{border-color:#B45309}
+.flagbtn--on{background:#B45309;border-color:#B45309;color:#fff}
+.flagnote{flex:1 1 220px;min-width:0;font:400 13px var(--font);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#FFFDF9}
+.flagpill{margin-top:12px;font:500 13px var(--font);color:#7A5210;background:#FFF6E9;border:1px solid #F3D8A8;border-radius:var(--radius-sm);padding:9px 12px}
+.flagpill b{color:#B45309}
+/* summary: per-specialty breakdown */
+.sum-cats{margin:6px 0 20px;text-align:left;display:flex;flex-direction:column;gap:8px}
+.sum-cats h3{font:700 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px;text-align:center}
+.scat{display:grid;grid-template-columns:minmax(96px,150px) 1fr 46px;gap:10px;align-items:center;font-size:13px}
+.scat__n{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scat__bar{height:9px;border-radius:6px;background:#E2EAF2;overflow:hidden}
+.scat__bar i{display:block;height:100%;border-radius:6px}
+.scat__v{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);text-align:right}
+.sum-flags{margin-top:14px;font-size:13px;color:#7A5210}
+.sum-flags b{color:#B45309}
 
 /* ---------- NHS header bar ---------- */
 .topbar{background:var(--nhs-blue);color:#fff;position:sticky;top:0;z-index:40;box-shadow:0 2px 0 var(--nhs-dark)}
@@ -262,7 +284,7 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
   border-radius:10px;padding:8px 14px;min-width:64px;box-shadow:var(--shadow)}
 .pill b{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--nhs-dark);line-height:1}
 .pill span{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-top:3px;font-weight:600}
-.pill--streak b{color:var(--nhs-amber)}
+.pill--streak b{color:#B45309}
 .playcard{padding:24px 22px 26px}
 .playfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
 .feedback{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:8px}
@@ -417,6 +439,7 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
 </style>
 </head>
 <body>
+<a class="skip" href="#appmain">Skip to content</a>
 <header class="topbar">
   <div class="topbar__in">
     <a class="logo" href="?" data-nav="host" aria-label="Queen Elizabeth Hospital Birmingham — Medicine Quiz home">
@@ -435,7 +458,7 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
   </div>
 </header>
 
-<main>
+<main id="appmain" tabindex="-1">
   <!-- ============ HOME ============ -->
   <section id="view-daily" class="wrap">
     <div class="daily">
@@ -462,6 +485,7 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
         <div class="streak-grid" id="daily-grid"></div>
         <div class="streak-summary" id="daily-summary">&mdash;</div>
       </div>
+      <div class="flagpill hidden" id="daily-flagpill">⚑ <b id="daily-flagn">0</b> flagged for the QA review · <button class="textbtn" id="daily-flagexp" type="button">Export flags</button></div>
       <div class="dailycta">
         <button class="btn btn--primary" data-nav="host">Host today's question for the team &rarr;</button>
         <button class="btn btn--ghost" data-nav="play">Practise the full 365-question bank &rarr;</button>
@@ -518,7 +542,7 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
             <div class="ring__num" id="ring-num">60</div>
             <div class="ring__flat"></div>
           </div>
-          <div class="monitor__sub" id="monitor-sub">Press Start to begin</div>
+          <div class="monitor__sub" id="monitor-sub" role="status" aria-live="polite">Press Start to begin</div>
           <div class="monitor__resp" id="host-responses"></div>
         </div>
 
@@ -606,9 +630,10 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
           <div class="explain__lab"><span class="ans" id="play-ans">B</span> Correct answer &amp; teaching point</div>
           <p id="play-exp"></p>
           <div class="whywrong" id="play-why"></div>
+          <div class="flagrow"><button type="button" class="flagbtn" id="play-flag">⚑ Flag this question for review</button><input type="text" class="flagnote hidden" id="play-flagnote" placeholder="What looks wrong? (optional)" maxlength="300" aria-label="Flag note"></div>
         </div>
         <div class="playfoot">
-          <div class="feedback" id="play-feedback"></div>
+          <div class="feedback" id="play-feedback" role="status" aria-live="polite"></div>
           <button class="btn btn--primary" id="play-next" disabled>Next question →</button>
         </div>
       </div>
@@ -623,6 +648,9 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
       <div class="summary__score"><span id="sum-correct">0</span><small>/<span id="sum-total">0</span></small></div>
       <h2 id="sum-head">Well done</h2>
       <p id="sum-msg"></p>
+      <div class="sum-cats hidden" id="sum-cats"></div>
+      <div><button class="btn btn--reveal hidden" id="sum-retry">Retry the ones you missed</button></div>
+      <div class="sum-flags hidden" id="sum-flags">⚑ <b id="sum-flagn">0</b> flagged for the QA review · <button class="textbtn" id="sum-flagexp" type="button">Export flags</button></div>
       <div>
         <button class="btn btn--primary" id="sum-again">Try another quiz</button>
         <button class="btn btn--ghost" id="sum-host">Host a session</button>
@@ -632,7 +660,7 @@ select{font-family:var(--font);font-size:13.5px;padding:9px 11px;border:1px soli
 
   <!-- ============ JOIN — live player client ============ -->
   <section id="view-join" class="wrap hidden">
-    <div class="joinwrap" id="join-root"></div>
+    <div class="joinwrap" id="join-root" aria-live="polite"></div>
   </section>
 </main>
 
@@ -705,6 +733,7 @@ function show(view,push){
   });
   if(push){const u=new URL(location.href);if(view==='host')u.searchParams.delete('mode');else u.searchParams.set('mode',view);history.pushState({view},'',u);}
   window.scrollTo({top:0,behavior:'instant'in window?'instant':'auto'});
+  if(push){const sec=$('view-'+view);if(sec){sec.setAttribute('tabindex','-1');sec.focus({preventScroll:true});}}
   if(view==='host')Host.enter();
   if(view==='play')Play.enter();
   if(view==='daily')Daily.enter();
@@ -949,8 +978,35 @@ const STATS_KEY='qehb_med_stats_v1';
 function loadStats(){try{return JSON.parse(localStorage.getItem(STATS_KEY))||{answered:0,correct:0,best:0};}catch(e){return{answered:0,correct:0,best:0};}}
 function saveStats(s){try{localStorage.setItem(STATS_KEY,JSON.stringify(s));}catch(e){}}
 
+/* ---- question flags -> QA review pipeline ---- */
+const FLAGS_KEY='qehb_med_flags_v1';
+function loadFlags(){try{return JSON.parse(localStorage.getItem(FLAGS_KEY))||{};}catch(e){return{};}}
+function saveFlags(f){try{localStorage.setItem(FLAGS_KEY,JSON.stringify(f));}catch(e){}}
+function setFlag(i,on,note){const f=loadFlags();if(on){f[i]=f[i]||{at:new Date().toISOString()};if(note!==undefined)f[i].note=note;}else delete f[i];saveFlags(f);updateFlagBadges();}
+function flagCount(){return Object.keys(loadFlags()).length;}
+function exportFlags(){
+  const payload={tool:'qehb-quiz-flags',version:1,exportedAt:new Date().toISOString(),flags:loadFlags()};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='QEHB-quiz-flags_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function updateFlagBadges(){
+  const n=flagCount();
+  const p=$('daily-flagpill');if(p){p.classList.toggle('hidden',n===0);const b=$('daily-flagn');if(b)b.textContent=n;}
+  const sf=$('sum-flags');if(sf){sf.classList.toggle('hidden',n===0);const b=$('sum-flagn');if(b)b.textContent=n;}
+}
+function wireFlagUI(btnId,noteId,qi){
+  const btn=$(btnId),note=$(noteId);if(!btn)return;
+  const f=loadFlags()[qi];
+  const paint=on=>{btn.classList.toggle('flagbtn--on',on);btn.textContent=on?'\u2691 Flagged \u2014 export from the daily page or your score screen':'\u2691 Flag this question for review';if(note)note.classList.toggle('hidden',!on);};
+  paint(!!f);if(note)note.value=(f&&f.note)||'';
+  btn.onclick=()=>{const on=!btn.classList.contains('flagbtn--on');setFlag(qi,on,note?note.value:undefined);paint(on);if(on&&note)note.focus();};
+  if(note)note.oninput=()=>{if(btn.classList.contains('flagbtn--on'))setFlag(qi,true,note.value);};
+}
+
 const Play={
-  order:[],idx:0,answered:false,score:0,streak:0,cat:'all',built:false,
+  order:[],idx:0,answered:false,score:0,streak:0,cat:'all',built:false,results:[],lastMissed:[],
   enter(){
     if(!this.built){this.build();this.built=true;}
     this.showSetup();
@@ -964,6 +1020,7 @@ const Play={
     $('play-quit').addEventListener('click',()=>this.finish());
     $('sum-again').addEventListener('click',()=>this.showSetup());
     $('sum-host').addEventListener('click',()=>show('host',true));
+    const sr=$('sum-retry');if(sr)sr.addEventListener('click',()=>this.startMissed());
     $('play-reset-stats').addEventListener('click',()=>{
       if(confirm('Clear your saved score history on this device?')){saveStats({answered:0,correct:0,best:0});this.renderCumulative();}
     });
@@ -981,11 +1038,21 @@ const Play={
       '<div class="m"><b>'+pct+'%</b><span>Correct</span></div>'+
       '<div class="m"><b>'+s.best+'</b><span>Best streak</span></div>';
   },
+  startMissed(){
+    if(!this.lastMissed.length)return;
+    this.order=this.lastMissed.map(i=>QBYID[i]).filter(Boolean);
+    this.idx=0;this.score=0;this.streak=0;this.results=[];
+    $('play-setup').classList.add('hidden');
+    $('play-summary').classList.add('hidden');
+    $('play-active').classList.remove('hidden');
+    $('play-cat-label').textContent='Retrying missed questions';
+    this.render();
+  },
   start(){
     this.cat=$('play-cat-select').value;
     let pool=poolFor(this.cat);
     this.order=$('play-shuffle').checked?shuffle(pool):pool;
-    this.idx=0;this.score=0;this.streak=0;
+    this.idx=0;this.score=0;this.streak=0;this.results=[];
     $('play-setup').classList.add('hidden');
     $('play-summary').classList.add('hidden');
     $('play-active').classList.remove('hidden');
@@ -1013,6 +1080,7 @@ const Play={
     $('play-ans').textContent=q.x;
     $('play-exp').textContent=q.e;
     $('play-why').innerHTML=buildWhy(q);
+    wireFlagUI('play-flag','play-flagnote',q.i);
     $('play-feedback').textContent='';$('play-feedback').className='feedback';
     $('play-next').disabled=true;
     $('play-next').textContent=(this.idx===this.order.length-1)?'See score →':'Next question →';
@@ -1035,6 +1103,7 @@ const Play={
     }
     // persist cumulative
     const s=loadStats();s.answered++;if(chosen===correct)s.correct++;if(this.streak>s.best)s.best=this.streak;saveStats(s);
+    this.results.push({i:q.i,c:q.c,ok:chosen===correct});
     $('play-score').textContent=this.score;
     $('play-streak').textContent=this.streak;
     $('play-explain').classList.add('show');
@@ -1064,6 +1133,21 @@ const Play={
     else if(pct>=40){head='Keep going';msg='Worth revisiting the explanations for the questions you found tricky.';}
     else{head='Practice makes perfect';msg='Every question has a teaching point — work through them and your score will climb.';}
     $('sum-head').textContent=head;$('sum-msg').textContent=msg+' You answered '+this.score+' of '+denom+' correctly ('+pct+'%).';
+    /* per-specialty breakdown + missed-question review */
+    this.lastMissed=this.results.filter(r=>!r.ok).map(r=>r.i);
+    const by={};this.results.forEach(r=>{const b=by[r.c]||(by[r.c]={r:0,t:0});b.t++;if(r.ok)b.r++;});
+    const cats=Object.keys(by).sort((a,b)=>by[b].t-by[a].t||a.localeCompare(b));
+    const sc=$('sum-cats');
+    if(sc){
+      if(cats.length>1||this.results.length>=4){
+        sc.classList.remove('hidden');
+        sc.innerHTML='<h3>By specialty</h3>'+cats.map(c=>{const v=by[c],p=Math.round(v.r/v.t*100);const col=p>=75?'var(--nhs-green)':(p>=50?'#B45309':'var(--nhs-red)');return '<div class="scat"><span class="scat__n" title="'+escapeHTML(c)+'">'+escapeHTML(c)+'</span><span class="scat__bar"><i style="width:'+p+'%;background:'+col+'"></i></span><span class="scat__v">'+v.r+'/'+v.t+'</span></div>';}).join('');
+      }else{sc.classList.add('hidden');sc.innerHTML='';}
+    }
+    const rt=$('sum-retry');
+    if(rt){const n=this.lastMissed.length;rt.classList.toggle('hidden',n===0);if(n)rt.textContent='Retry the '+n+' you missed';}
+    updateFlagBadges();
+    const sh=$('sum-head');sh.setAttribute('tabindex','-1');sh.focus();
   }
 };
 
@@ -1098,13 +1182,14 @@ const Daily={
     $('daily-date').textContent=dayLabel(d);
     $('daily-num').textContent=dayOfYear(d);
     $('daily-streak').textContent=currentStreak(hist);
-    $('daily-card').innerHTML='<div class="qhead"><span class="qnum">Q'+q.i+'</span><span class="qcat">'+escapeHTML(q.c)+'</span></div><p class="qstem">'+escapeHTML(q.q)+'</p><div class="opts" id="daily-opts"></div><div class="explain'+(answered?' show':'')+'" id="daily-explain"><div class="explain__lab"><span class="ans">'+q.x+'</span> Correct answer &amp; teaching point</div><p>'+escapeHTML(q.e)+'</p><div class="whywrong">'+buildWhy(q)+'</div></div><div class="playfoot"><div class="feedback" id="daily-feedback"></div></div>';
+    $('daily-card').innerHTML='<div class="qhead"><span class="qnum">Q'+q.i+'</span><span class="qcat">'+escapeHTML(q.c)+'</span></div><p class="qstem">'+escapeHTML(q.q)+'</p><div class="opts" id="daily-opts"></div><div class="explain'+(answered?' show':'')+'" id="daily-explain"><div class="explain__lab"><span class="ans">'+q.x+'</span> Correct answer &amp; teaching point</div><p>'+escapeHTML(q.e)+'</p><div class="whywrong">'+buildWhy(q)+'</div><div class="flagrow"><button type="button" class="flagbtn" id="daily-flag">\u2691 Flag this question for review</button><input type="text" class="flagnote hidden" id="daily-flagnote" placeholder="What looks wrong? (optional)" maxlength="300" aria-label="Flag note"></div></div><div class="playfoot"><div class="feedback" id="daily-feedback" role="status" aria-live="polite"></div></div>';
     const wrap=$('daily-opts');
     q.o.forEach((t,i)=>{const b=document.createElement('button');b.className='opt';b.dataset.k=LETTERS[i];b.innerHTML='<span class="opt__k">'+LETTERS[i]+'</span><span class="opt__t">'+escapeHTML(t)+'</span><span class="opt__tick">✓</span>';
       if(answered){b.disabled=true;if(LETTERS[i]===q.x)b.classList.add('opt--correct');else if(LETTERS[i]===past.pick)b.classList.add('opt--wrong');}
       else b.addEventListener('click',()=>this.answer(i,q,d));
       wrap.appendChild(b);});
     if(answered){const fb=$('daily-feedback');const correct=past.pick===q.x;fb.textContent=correct?'✓ Correct':'✗ You answered '+past.pick+' — correct is '+q.x;fb.className='feedback '+(correct?'feedback--right':'feedback--wrong');}
+    wireFlagUI('daily-flag','daily-flagnote',q.i);updateFlagBadges();
     this.grid(hist);this.summary(hist);
   },
   answer(i,q,d){
@@ -1313,6 +1398,9 @@ function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function boot(){
   const params=new URL(location.href).searchParams;
   const roomCode=params.get('room');
+  const _dfe=$('daily-flagexp');if(_dfe)_dfe.addEventListener('click',exportFlags);
+  const _sfe=$('sum-flagexp');if(_sfe)_sfe.addEventListener('click',exportFlags);
+  updateFlagBadges();
   if(roomCode){show('join',false);Player.start(roomCode);}
   else{show(params.get('mode')||'host',false);}
   if(!window.QRCode){
